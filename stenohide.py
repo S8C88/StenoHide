@@ -14,7 +14,7 @@ import sys
 import struct
 import hashlib
 
-# ─── LSB encode/decode ───────────────────────────────────────────────────
+# LSB encode/decode
 
 HEADER_MAGIC = b"STGH"  # 4-byte magic
 HEADER_FMT = "<4sI"     # magic (4s) + data_len (I)
@@ -95,7 +95,7 @@ def extract_text(img_path: str, password: str = ""):
         return None
 
 
-# ─── LSB pixel manipulation (using raw pixel data) ──────────────────────
+# LSB pixel manipulation (using raw pixel data)
 # TODO: this only works with uncompressed BMP/TGA. PNG uses deflate, need
 # to decompress first. For now this is a placeholder for the real LSB method.
 
@@ -170,7 +170,7 @@ def lsb_decode_pixels(img_path: str) -> str:
     return message
 
 
-# ─── CLI ──────────────────────────────────────────────────────────────────
+# CLI
 
 def main():
     parser = argparse.ArgumentParser(description="StenoHide — LSB steganography tool")
