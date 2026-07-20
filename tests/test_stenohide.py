@@ -12,7 +12,7 @@ spec = importlib.util.spec_from_file_location("stenohide", os.path.join(PROJECT_
 sh = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(sh)
 
-# ─── Helpers ──────────────────────────────────────────────────────────────
+# Helpers
 
 def make_test_png(path):
     """Generate a minimal valid 1x1 blue PNG."""
@@ -198,7 +198,7 @@ def test_unicode_message():
         assert extracted == msg
 
 
-# ─── Runner ───────────────────────────────────────────────────────────────
+# Runner
 
 if __name__ == "__main__":
     tests = [

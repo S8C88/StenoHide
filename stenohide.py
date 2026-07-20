@@ -13,18 +13,42 @@ import os
 import sys
 import struct
 import hashlib
+from pathlib import Path
 
 # LSB encode/decode
 
 HEADER_MAGIC = b"STGH"  # 4-byte magic
 HEADER_FMT = "<4sI"     # magic (4s) + data_len (I)
 
+# Maximum file sizes (CWE-770)
+MAX_IMAGE_SIZE = 100 * 1024 * 1024  # 100MB
+
+
+def _validate_path(path: str, purpose: str = "input") -> str:
+    """Validate a file path — canonicalize, check exists (CWE-20/CWE-22)."""
+    resolved = os.path.realpath(path)
+    if purpose == "input":
+        if not os.path.isfile(resolved):
+            raise FileNotFoundError(f"Input file not found: {resolved}")
+        file_size = os.path.getsize(resolved)
+        if file_size > MAX_IMAGE_SIZE:
+            raise ValueError(f"File too large ({file_size} bytes > {MAX_IMAGE_SIZE} max)")
+    elif purpose == "output":
+        parent = os.path.dirname(resolved)
+        if parent and not os.path.isdir(parent):
+            raise FileNotFoundError(f"Output directory does not exist: {parent}")
+    return resolved
+
 def hide_text(img_path: str, message: str, output_path: str, password: str = ""):
     """
     Embed message into image LSBs.
     Uses PNG metadata approach — cleanest for Python without PIL.
     """
-    with open(img_path, "rb") as f:
+    # CWE-20/CWE-22: Validate paths
+    validated_input = _validate_path(img_path, "input")
+    validated_output = _validate_path(output_path, "output")
+
+    with open(validated_input, "rb") as f:
         data = bytearray(f.read())
 
     if password:
@@ -48,7 +72,7 @@ def hide_text(img_path: str, message: str, output_path: str, password: str = "")
     # Append payload after IEND — parsers ignore trailing data
     stego = data + full_payload
 
-    with open(output_path, "wb") as f:
+    with open(validated_output, "wb") as f:
         f.write(stego)
 
     print(f"[+] Message hidden in {output_path} ({len(payload)} bytes)")
@@ -56,7 +80,10 @@ def hide_text(img_path: str, message: str, output_path: str, password: str = "")
 
 def extract_text(img_path: str, password: str = ""):
     """Extract hidden message from image."""
-    with open(img_path, "rb") as f:
+    # CWE-20/CWE-22: Validate input path
+    validated_input = _validate_path(img_path, "input")
+
+    with open(validated_input, "rb") as f:
         data = f.read()
 
     # Find the payload after IEND
@@ -101,7 +128,11 @@ def extract_text(img_path: str, password: str = ""):
 
 def lsb_encode_pixels(img_path: str, message: str, output_path: str):
     """LSB encode in raw pixel data (BMP format only currently)."""
-    with open(img_path, "rb") as f:
+    # CWE-20/CWE-22: Validate paths
+    validated_input = _validate_path(img_path, "input")
+    validated_output = _validate_path(output_path, "output")
+
+    with open(validated_input, "rb") as f:
         data = bytearray(f.read())
 
     if data[0:2] != b"BM":
@@ -135,14 +166,17 @@ def lsb_encode_pixels(img_path: str, message: str, output_path: str):
         idx = pixel_offset + len(bits) + i
         data[idx] = data[idx] & 0xFE
 
-    with open(output_path, "wb") as f:
+    with open(validated_output, "wb") as f:
         f.write(data)
     return True
 
 
 def lsb_decode_pixels(img_path: str) -> str:
     """Extract LSB-encoded message from BMP pixel data."""
-    with open(img_path, "rb") as f:
+    # CWE-20/CWE-22: Validate input path
+    validated_input = _validate_path(img_path, "input")
+
+    with open(validated_input, "rb") as f:
         data = f.read()
 
     if data[0:2] != b"BM":
