@@ -13,7 +13,6 @@ import os
 import sys
 import struct
 import hashlib
-from pathlib import Path
 
 # LSB encode/decode
 
