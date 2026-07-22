@@ -65,8 +65,7 @@ def hide_text(img_path: str, message: str, output_path: str, password: str = "")
     # Find end-of-data marker in PNG (IEND chunk)
     iend_pos = data.rfind(b"IEND")
     if iend_pos == -1:
-        print("[-] Not a valid PNG (IEND chunk not found)")
-        sys.exit(1)
+        raise ValueError("Not a valid PNG (IEND chunk not found)")
 
     # Append payload after IEND — parsers ignore trailing data
     stego = data + full_payload
